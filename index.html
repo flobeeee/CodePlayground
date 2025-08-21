@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playground</title>
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="css/file-manager.css">
+</head>
+<body>
+    <!-- 사이드바 메뉴 -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3>메뉴</h3>
+            <button class="close-btn" id="closeBtn">&times;</button>
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="#" class="nav-link active" data-page="home">🏠 홈</a></li>
+                <li><a href="#" class="nav-link" data-page="drawingBoard">🎨 그림판</a></li>
+                <li><a href="#" class="nav-link" data-page="mobile">📝 스도쿠</a></li>
+                <li><a href="#" class="nav-link" data-page="design">⭐ 무언가</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- 메뉴 토글 버튼 -->
+    <button class="menu-toggle" id="menuToggle">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- 메인 컨테이너 -->
+    <div class="main-container">
+        <div class="container">
+            <!-- 페이지 콘텐츠 -->
+            <div id="pageContent">
+                <!-- 홈 페이지 -->
+                <div class="page" id="homePage">
+                    <h1>🏠 홈</h1>
+                    <p>안녕하세요</p>
+                </div>
+
+                <!-- 그림판 페이지 -->
+                <div class="page" id="drawingBoardPage" style="display: none;">
+                    <h1>🎨 그림판</h1>
+                    <div class="drawing-section">
+                        <h2>🎨 그림 그리기</h2>
+                        <p><strong>클릭에 따라 그리기 ON/OFF</strong></p>
+
+                        <!-- 그림판 도구 -->
+                        <div class="drawing-tools">
+                            <div class="tool-group">
+                                <label>브러시 크기:</label>
+                                <input type="range" id="brushSize" min="1" max="50" value="5" class="brush-slider">
+                                <span id="brushSizeValue">5px</span>
+                            </div>
+                            
+                            <div class="tool-group">
+                                <label>색상:</label>
+                                <input type="color" id="colorPicker" value="#000000" class="color-picker">
+                            </div>
+                            
+                            <div class="tool-group">
+                                <button id="clearCanvas" class="tool-btn">🗑️ 지우기</button>
+                                <button id="saveCanvas" class="tool-btn">💾 저장</button>
+                                <button id="downloadCanvas" class="tool-btn">⬇️ 다운로드</button>
+                            </div>
+                        </div>
+                        
+                        <!-- 캔버스 컨테이너 -->
+                        <div class="canvas-container">
+                            <canvas id="drawingCanvas" width="800" height="600" style="background-color: #ffffff;"></canvas>
+                        </div>
+                        
+                        <!-- 저장된 그림 목록 -->
+                        <div class="saved-drawings">
+                            <h3>💾 저장된 그림들</h3>
+                            <div class="drawings-grid" id="drawingsGrid">
+                                <div class="drawing-item">
+                                    <div class="drawing-preview">
+                                        <canvas width="150" height="100"></canvas>
+                                    </div>
+                                    <div class="drawing-info">
+                                        <h4>첫 번째 그림</h4>
+                                        <p>2024년 1월 15일</p>
+                                    </div>
+                                    <div class="drawing-actions">
+                                        <button class="action-btn download-btn" title="다운로드">⬇️</button>
+                                        <button class="action-btn delete-btn" title="삭제">🗑️</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 모바일 앱 페이지 -->
+                <div class="page" id="mobilePage" style="display: none;">
+                    <h1>📝 모바일 앱 파일</h1>
+                    <p>모바일 앱 페이지입니다! <span class="clickable-text" data-page="design">다음</span>으로 가거나</p>
+                    <p><span class="clickable-text" data-page="drawingBoard">이전</span> 페이지로 갈 수 있습니다.</p>
+                    <p>사이드바 메뉴를 통해 원하는 페이지로 바로 이동하세요.</p>
+                    
+                    <div class="file-section">
+                        <h2>📱 모바일 앱 폴더</h2>
+                        <div class="file-upload-area">
+                            <input type="file" id="fileInputMobile" multiple accept="*/*" style="display: none;">
+                            <button class="upload-btn" onclick="document.getElementById('fileInputMobile').click()">
+                                📤 파일 업로드
+                            </button>
+                            <p class="upload-hint">모바일 앱 관련 파일들을 업로드하세요</p>
+                        </div>
+                        <div class="file-list" id="fileListMobile">
+                            <div class="file-item">
+                                <div class="file-icon">📱</div>
+                                <div class="file-info">
+                                    <h4>App.js</h4>
+                                    <p>React Native 메인 앱 파일</p>
+                                    <span class="file-size">2.7 KB</span>
+                                </div>
+                                <div class="file-actions">
+                                    <button class="action-btn download-btn" title="다운로드">⬇️</button>
+                                    <button class="action-btn delete-btn" title="삭제">🗑️</button>
+                                </div>
+                            </div>
+                            <div class="file-item">
+                                <div class="file-icon">📦</div>
+                                <div class="file-info">
+                                    <h4>package.json</h4>
+                                    <p>프로젝트 의존성 파일</p>
+                                    <span class="file-size">1.5 KB</span>
+                                </div>
+                                <div class="file-actions">
+                                    <button class="action-btn download-btn" title="다운로드">⬇️</button>
+                                    <button class="action-btn delete-btn" title="삭제">🗑️</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 디자인 페이지 -->
+                <div class="page" id="designPage" style="display: none;">
+                    <h1>⭐ 디자인 파일</h1>
+                    <p>디자인 페이지입니다! <span class="clickable-text" data-page="home">홈</span>으로 돌아가세요.</p>
+                    <p>사이드바 메뉴가 편리한 네비게이션을 제공합니다.</p>
+                    
+                    <div class="file-section">
+                        <h2>🎨 디자인 폴더</h2>
+                        <div class="file-upload-area">
+                            <input type="file" id="fileInputDesign" multiple accept="image/*,.psd,.ai,.sketch,.fig" style="display: none;">
+                            <button class="upload-btn" onclick="document.getElementById('fileInputDesign').click()">
+                                📤 파일 업로드
+                            </button>
+                            <p class="upload-hint">디자인 파일들을 업로드하세요 (이미지, PSD, AI, Sketch, Figma)</p>
+                        </div>
+                        <div class="file-list" id="fileListDesign">
+                            <div class="file-item">
+                                <div class="file-icon">🎨</div>
+                                <div class="file-info">
+                                    <h4>logo.psd</h4>
+                                    <p>브랜드 로고 디자인</p>
+                                    <span class="file-size">15.2 MB</span>
+                                </div>
+                                <div class="file-actions">
+                                    <button class="action-btn download-btn" title="다운로드">⬇️</button>
+                                    <button class="action-btn delete-btn" title="삭제">🗑️</button>
+                                </div>
+                            </div>
+                            <div class="file-item">
+                                <div class="file-icon">📐</div>
+                                <div class="file-info">
+                                    <h4>ui-design.fig</h4>
+                                    <p>UI 디자인 파일</p>
+                                    <span class="file-size">8.7 MB</span>
+                                </div>
+                                <div class="file-actions">
+                                    <button class="action-btn download-btn" title="다운로드">⬇️</button>
+                                    <button class="action-btn delete-btn" title="삭제">🗑️</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/common.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script src="js/file-manager.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
