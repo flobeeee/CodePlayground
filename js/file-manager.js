@@ -298,15 +298,10 @@ class DrawingBoard {
         
         // 도구 버튼 이벤트
         const clearBtn = document.getElementById('clearCanvas');
-        const saveBtn = document.getElementById('saveCanvas');
         const downloadBtn = document.getElementById('downloadCanvas');
         
         if (clearBtn) {
             clearBtn.addEventListener('click', () => this.clearCanvas());
-        }
-        
-        if (saveBtn) {
-            saveBtn.addEventListener('click', () => this.saveDrawing());
         }
         
         if (downloadBtn) {
