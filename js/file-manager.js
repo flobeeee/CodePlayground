@@ -282,10 +282,8 @@ class DrawingBoard {
         if (!this.canvas) return;
         
         // 마우스 이벤트
-        this.canvas.addEventListener('mousedown', (e) => this.startDrawing(e));
+        this.canvas.addEventListener('mousedown', (e) => this.startOrStopDrawing(e));
         this.canvas.addEventListener('mousemove', (e) => this.draw(e));
-        this.canvas.addEventListener('mouseup', () => this.stopDrawing());
-        this.canvas.addEventListener('mouseout', () => this.stopDrawing());
         
         // 터치 이벤트 (모바일)
         this.canvas.addEventListener('touchstart', (e) => {
@@ -315,9 +313,17 @@ class DrawingBoard {
             downloadBtn.addEventListener('click', () => this.downloadDrawing());
         }
     }
+
+    startOrStopDrawing(e) {
+        this.isDrawing = !this.isDrawing;
+
+        // 그리기 시작할 때 새로운 경로 시작
+        this.ctx.beginPath();
+    }
     
     startDrawing(e) {
         this.isDrawing = true;
+
         const rect = this.canvas.getBoundingClientRect();
         this.lastX = e.clientX - rect.left;
         this.lastY = e.clientY - rect.top;
@@ -326,6 +332,10 @@ class DrawingBoard {
         this.ctx.beginPath();
         this.ctx.moveTo(this.lastX, this.lastY);
     }
+
+    stopDrawing() {
+        this.isDrawing = false;
+    }
     
     draw(e) {
         if (!this.isDrawing) return;
@@ -333,17 +343,13 @@ class DrawingBoard {
         const rect = this.canvas.getBoundingClientRect();
         const currentX = e.clientX - rect.left;
         const currentY = e.clientY - rect.top;
-        
+
         this.ctx.lineTo(currentX, currentY);
         this.ctx.stroke();
         
         this.lastX = currentX;
         this.lastY = currentY;
-    }
-    
-    
-    stopDrawing() {
-        this.isDrawing = false;
+
     }
     
     clearCanvas() {
