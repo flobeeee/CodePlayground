@@ -6,7 +6,7 @@
     <title>Playground</title>
     <link rel="stylesheet" href="css/common.css" />
     <link rel="stylesheet" href="css/sidebar.css" />
-    <link rel="stylesheet" href="css/file-manager.css" />
+    <link rel="stylesheet" href="css/hiddenPart.css" />
   </head>
   <body>
     <!-- 사이드바 메뉴 -->
@@ -23,8 +23,10 @@
           <li>
             <a href="#" class="nav-link" data-page="drawingBoard">🎨 그림판</a>
           </li>
+          <li>
+            <a href="#" class="nav-link" data-page="design">⭐ 숨은그림</a>
+          </li>
           <li><a href="#" class="nav-link" data-page="mobile">📝 스도쿠</a></li>
-          <li><a href="#" class="nav-link" data-page="design">⭐ 무언가</a></li>
         </ul>
       </nav>
     </div>
@@ -170,19 +172,12 @@
             </div>
           </div>
 
-          <!-- 디자인 페이지 -->
+          <!-- 숨은그림 페이지 -->
           <div class="page" id="designPage" style="display: none">
-            <h1>⭐ 디자인 파일</h1>
-            <p>
-              디자인 페이지입니다!
-              <span class="clickable-text" data-page="home">홈</span>으로
-              돌아가거나 숨은그림 게임을 즐겨보세요.
-            </p>
+            <h1>⭐ 숨은그림 찾기</h1>
             <p>이미지를 올리고 숨겨진 좌표들을 찾아 클릭해보세요.</p>
 
             <div class="hidden-game-section">
-              <h2>🕵️‍♀️ 숨은그림 찾기</h2>
-
               <div class="hidden-game-upload">
                 <input
                   type="file"
@@ -243,7 +238,7 @@
 
     <script src="js/common.js"></script>
     <script src="js/sidebar.js"></script>
-    <script src="js/file-manager.js"></script>
+    <script src="js/hiddenPart.js"></script>
     <script src="js/main.js"></script>
   </body>
 </html>
