@@ -1,440 +1,507 @@
-// 파일 관리 클래스
-class FileManager {
-    constructor() {
-        this.files = {};
-        this.currentPage = 'home';
-        this.init();
+// 숨은그림 게임 클래스
+class HiddenPictureGame {
+  constructor() {
+    this.fileInput = document.getElementById("hiddenImageInput");
+    this.uploadBtn = document.getElementById("hiddenImageUploadBtn");
+    this.canvas = document.getElementById("hiddenImageCanvas");
+    this.ctx = this.canvas ? this.canvas.getContext("2d") : null;
+    this.pointsCountInput = document.getElementById("hiddenPointsCount");
+    this.generatePointsBtn = document.getElementById("generatePointsBtn");
+    this.pointsList = document.getElementById("hiddenPointsList");
+    this.messageEl = document.getElementById("hiddenGameMessage");
+
+    this.image = new Image();
+    this.points = [];
+    this.hitRadius = 25;
+    this.storageKey = "hiddenPictureGame_state";
+
+    this.init();
+  }
+
+  init() {
+    if (!this.canvas || !this.ctx) {
+      return;
     }
-    
-    init() {
-        this.loadFilesFromStorage();
-        this.setupFileUploads();
-        this.setupFileActions();
-        this.setupDragAndDrop();
-    }
-    
-    // 파일 업로드 설정
-    setupFileUploads() {
-        const fileInputs = document.querySelectorAll('input[type="file"]');
-        fileInputs.forEach(input => {
-            input.addEventListener('change', (e) => {
-                this.handleFileUpload(e.target.files, input.id);
-            });
-        });
-    }
-    
-    // 파일 액션 설정
-    setupFileActions() {
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('download-btn')) {
-                this.handleFileDownload(e);
-            } else if (e.target.classList.contains('delete-btn')) {
-                this.handleFileDelete(e);
-            }
-        });
-    }
-    
-    // 드래그 앤 드롭 설정
-    setupDragAndDrop() {
-        const uploadAreas = document.querySelectorAll('.file-upload-area');
-        
-        uploadAreas.forEach(area => {
-            area.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                area.classList.add('dragover');
-            });
-            
-            area.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                area.classList.remove('dragover');
-            });
-            
-            area.addEventListener('drop', (e) => {
-                e.preventDefault();
-                area.classList.remove('dragover');
-                const files = e.dataTransfer.files;
-                const fileInput = area.querySelector('input[type="file"]');
-                if (fileInput) {
-                    this.handleFileUpload(files, fileInput.id);
-                }
-            });
-        });
-    }
-    
-    // 파일 업로드 처리
-    handleFileUpload(files, inputId) {
-        const pageName = inputId.replace('fileInput', '').toLowerCase();
-        const fileList = this.files[pageName] || [];
-        
-        Array.from(files).forEach(file => {
-            const fileInfo = {
-                id: Date.now() + Math.random(),
-                name: file.name,
-                size: file.size,
-                type: file.type,
-                lastModified: file.lastModified,
-                icon: Utils.getFileIcon(file.name),
-                fileType: Utils.getFileType(file.name)
-            };
-            
-            fileList.push(fileInfo);
-            
-            // 파일 내용을 메모리에 저장 (실제 프로젝트에서는 서버로 업로드)
-            this.storeFileContent(fileInfo.id, file);
-        });
-        
-        this.files[pageName] = fileList;
-        this.saveFilesToStorage();
-        this.renderFileList(pageName);
-        
-        Utils.showNotification(`${files.length}개 파일이 업로드되었습니다.`, 'success');
-    }
-    
-    // 파일 다운로드 처리
-    handleFileDownload(e) {
-        const fileItem = e.target.closest('.file-item');
-        const fileName = fileItem.querySelector('h4').textContent;
-        const fileId = fileItem.dataset.fileId;
-        
-        // 실제 프로젝트에서는 서버에서 파일을 가져옴
-        const fileContent = this.getFileContent(fileId);
-        if (fileContent) {
-            Utils.downloadFile(fileName, fileContent);
-            Utils.showNotification(`${fileName} 파일이 다운로드되었습니다.`, 'success');
-        } else {
-            Utils.showNotification('파일을 찾을 수 없습니다.', 'error');
+
+    this.bindEvents();
+    this.loadFromStorage();
+  }
+
+  bindEvents() {
+    if (this.uploadBtn && this.fileInput) {
+      this.uploadBtn.addEventListener("click", () => {
+        this.fileInput.click();
+      });
+
+      this.fileInput.addEventListener("change", (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) {
+          this.loadImageFile(file);
         }
+      });
     }
-    
-    // 파일 삭제 처리
-    handleFileDelete(e) {
-        const fileItem = e.target.closest('.file-item');
-        const fileName = fileItem.querySelector('h4').textContent;
-        const fileId = fileItem.dataset.fileId;
-        
-        if (Utils.confirmDelete(fileName)) {
-            const pageName = this.currentPage;
-            const fileList = this.files[pageName] || [];
-            const updatedList = fileList.filter(file => file.id != fileId);
-            
-            this.files[pageName] = updatedList;
-            this.saveFilesToStorage();
-            this.renderFileList(pageName);
-            
-            Utils.showNotification(`${fileName} 파일이 삭제되었습니다.`, 'success');
+
+    if (this.generatePointsBtn) {
+      this.generatePointsBtn.addEventListener("click", () => {
+        if (!this.image || !this.image.src) {
+          this.showMessage("먼저 이미지를 업로드해주세요.", "warning");
+          return;
         }
+        this.generateRandomPoints();
+      });
     }
-    
-    // 파일 목록 렌더링
-    renderFileList(pageName) {
-        const fileListElement = document.getElementById(`fileList${pageName.charAt(0).toUpperCase() + pageName.slice(1)}`);
-        if (!fileListElement) return;
-        
-        const files = this.files[pageName] || [];
-        
-        if (files.length === 0) {
-            fileListElement.innerHTML = '<p class="no-files">업로드된 파일이 없습니다.</p>';
-            return;
-        }
-        
-        fileListElement.innerHTML = files.map(file => `
-            <div class="file-item" data-file-id="${file.id}">
-                <div class="file-icon" data-type="${file.fileType}">${file.icon}</div>
-                <div class="file-info">
-                    <h4>${file.name}</h4>
-                    <p>${file.type || '알 수 없는 파일 형식'}</p>
-                    <span class="file-size">${Utils.formatFileSize(file.size)}</span>
-                </div>
-                <div class="file-actions">
-                    <button class="action-btn download-btn" title="다운로드">⬇️</button>
-                    <button class="action-btn delete-btn" title="삭제">🗑️</button>
-                </div>
-            </div>
-        `).join('');
+
+    // 캔버스 클릭으로 정답/오답 판정
+    if (this.canvas) {
+      this.canvas.addEventListener("click", (e) => this.handleCanvasClick(e));
     }
-    
-    // 파일 내용 저장 (메모리)
-    storeFileContent(fileId, file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            this.fileContents = this.fileContents || {};
-            this.fileContents[fileId] = e.target.result;
-        };
-        reader.readAsText(file);
-    }
-    
-    // 파일 내용 가져오기
-    getFileContent(fileId) {
-        return this.fileContents ? this.fileContents[fileId] : null;
-    }
-    
-    // 로컬 스토리지에서 파일 목록 로드
-    loadFilesFromStorage() {
-        const savedFiles = Utils.storage.get('fileManager_files');
-        if (savedFiles) {
-            this.files = savedFiles;
-        }
-    }
-    
-    // 로컬 스토리지에 파일 목록 저장
-    saveFilesToStorage() {
-        Utils.storage.set('fileManager_files', this.files);
-    }
-    
-    // 페이지 변경 시 파일 목록 업데이트
-    updateCurrentPage(pageName) {
-        this.currentPage = pageName;
-        this.renderFileList(pageName);
-    }
-    
-    // 파일 검색
-    searchFiles(query, pageName = null) {
-        const searchPage = pageName || this.currentPage;
-        const files = this.files[searchPage] || [];
-        
-        if (!query) return files;
-        
-        return files.filter(file => 
-            file.name.toLowerCase().includes(query.toLowerCase()) ||
-            file.type.toLowerCase().includes(query.toLowerCase())
+  }
+
+  loadImageFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      this.image = new Image();
+      this.image.onload = () => {
+        this.drawImageToCanvas();
+        this.points = [];
+        this.renderPointsList();
+        this.saveToStorage();
+        this.showMessage(
+          "이미지가 업로드되었습니다. 포인트를 생성해보세요!",
+          "success"
         );
+      };
+      this.image.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  drawImageToCanvas() {
+    if (!this.image || !this.canvas || !this.ctx) return;
+
+    // 캔버스 초기화
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    const canvasRatio = this.canvas.width / this.canvas.height;
+    const imageRatio = this.image.width / this.image.height;
+
+    let drawWidth, drawHeight, offsetX, offsetY;
+
+    if (imageRatio > canvasRatio) {
+      drawWidth = this.canvas.width;
+      drawHeight = drawWidth / imageRatio;
+    } else {
+      drawHeight = this.canvas.height;
+      drawWidth = drawHeight * imageRatio;
     }
-    
-    // 파일 통계
-    getFileStats(pageName = null) {
-        const targetPage = pageName || this.currentPage;
-        const files = this.files[targetPage] || [];
-        
-        return {
-            totalFiles: files.length,
-            totalSize: files.reduce((sum, file) => sum + file.size, 0),
-            fileTypes: files.reduce((types, file) => {
-                const type = file.fileType;
-                types[type] = (types[type] || 0) + 1;
-                return types;
-            }, {})
-        };
+
+    offsetX = (this.canvas.width - drawWidth) / 2;
+    offsetY = (this.canvas.height - drawHeight) / 2;
+
+    this.ctx.drawImage(this.image, offsetX, offsetY, drawWidth, drawHeight);
+  }
+
+  generateRandomPoints() {
+    const count = Math.min(
+      Math.max(parseInt(this.pointsCountInput.value || "5", 10), 1),
+      10
+    );
+
+    this.points = [];
+
+    for (let i = 0; i < count; i++) {
+      const x =
+        Math.random() * (this.canvas.width - this.hitRadius * 2) +
+        this.hitRadius;
+      const y =
+        Math.random() * (this.canvas.height - this.hitRadius * 2) +
+        this.hitRadius;
+
+      const previewDataUrl = this.createPointPreview(x, y);
+
+      this.points.push({
+        id: Date.now() + Math.random(),
+        x,
+        y,
+        found: false,
+        previewDataUrl,
+      });
     }
+
+    this.renderPointsList();
+    this.saveToStorage();
+    this.showMessage(
+      `${count}개의 숨은 포인트가 생성되었습니다. 캔버스를 클릭해서 찾아보세요!`,
+      "info"
+    );
+  }
+
+  createPointPreview(x, y) {
+    if (!this.canvas) return null;
+
+    const size = 80;
+    const previewCanvas = document.createElement("canvas");
+    previewCanvas.width = size;
+    previewCanvas.height = size;
+    const previewCtx = previewCanvas.getContext("2d");
+
+    previewCtx.drawImage(
+      this.canvas,
+      x - size / 2,
+      y - size / 2,
+      size,
+      size,
+      0,
+      0,
+      size,
+      size
+    );
+
+    return previewCanvas.toDataURL("image/png");
+  }
+
+  handleCanvasClick(event) {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    let hitPoint = null;
+
+    this.points.forEach((point) => {
+      if (point.found) return;
+      const dx = point.x - x;
+      const dy = point.y - y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      if (distance <= this.hitRadius && !hitPoint) {
+        hitPoint = point;
+      }
+    });
+
+    if (hitPoint) {
+      hitPoint.found = true;
+      this.renderPointsList();
+      this.saveToStorage();
+      this.showMessage("🎉 정답입니다! 숨은 포인트를 찾았어요.", "success");
+      this.drawFoundMarker(hitPoint);
+    } else {
+      this.showMessage("❌ 틀렸어요! 다른 곳을 눌러보세요.", "error");
+    }
+  }
+
+  drawFoundMarker(point) {
+    if (!this.ctx) return;
+
+    this.ctx.save();
+    this.ctx.beginPath();
+    this.ctx.strokeStyle = "#27ae60";
+    this.ctx.lineWidth = 3;
+    this.ctx.arc(point.x, point.y, this.hitRadius, 0, Math.PI * 2);
+    this.ctx.stroke();
+    this.ctx.restore();
+  }
+
+  renderPointsList() {
+    if (!this.pointsList) return;
+
+    if (!this.points.length) {
+      this.pointsList.innerHTML =
+        '<p class="no-points">아직 생성된 포인트가 없습니다.</p>';
+      return;
+    }
+
+    this.pointsList.innerHTML = this.points
+      .map(
+        (point, index) => `
+                <div class="hidden-point-item ${
+                  point.found ? "found" : ""
+                }" data-point-id="${point.id}">
+                    <div class="hidden-point-preview">
+                        ${
+                          point.previewDataUrl
+                            ? `<img src="${point.previewDataUrl}" alt="포인트 미리보기">`
+                            : ""
+                        }
+                    </div>
+                    <div class="hidden-point-info">
+                        <h4>포인트 ${index + 1}</h4>
+                        <p>${
+                          point.found ? "✅ 맞췄어요!" : "❓ 아직 못 찾았어요"
+                        }</p>
+                    </div>
+                </div>
+            `
+      )
+      .join("");
+  }
+
+  saveToStorage() {
+    if (!this.canvas) return;
+    try {
+      const data = {
+        imageData: this.canvas.toDataURL("image/png"),
+        points: this.points,
+      };
+      Utils.storage.set(this.storageKey, data);
+    } catch (e) {
+      console.error("숨은그림 저장 오류:", e);
+    }
+  }
+
+  loadFromStorage() {
+    const saved = Utils.storage.get(this.storageKey);
+    if (!saved || !saved.imageData) return;
+
+    const img = new Image();
+    img.onload = () => {
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
+      this.image = img;
+      this.points = saved.points || [];
+      this.renderPointsList();
+      this.showMessage("이전에 저장된 숨은그림 게임을 불러왔습니다.", "info");
+    };
+    img.src = saved.imageData;
+  }
+
+  showMessage(text, type = "info") {
+    if (this.messageEl) {
+      this.messageEl.textContent = text;
+    }
+    if (window.Utils && Utils.showNotification) {
+      Utils.showNotification(text, type);
+    }
+  }
 }
 
 // 전역 객체로 노출
-window.FileManager = FileManager;
+window.HiddenPictureGame = HiddenPictureGame;
 
 // 그림판 관리 클래스
 class DrawingBoard {
-    constructor() {
-        this.canvas = null;
-        this.ctx = null;
-        this.isDrawing = false;
-        this.lastX = 0;
-        this.lastY = 0;
-        this.brushSize = 5;
-        this.color = '#000000';
-        this.savedDrawings = [];
-        
-        this.init();
-    }
-    
-    init() {
-        this.loadSavedDrawings();
-        this.setupCanvas();
-        this.setupTools();
-        this.setupEventListeners();
-    }
-    
-    setupCanvas() {
-        this.canvas = document.getElementById('drawingCanvas');
-        if (!this.canvas) return;
-        
-        this.ctx = this.canvas.getContext('2d');
-        this.ctx.lineCap = 'round';
-        this.ctx.lineJoin = 'round';
-        this.ctx.strokeStyle = this.color;
-        this.ctx.lineWidth = this.brushSize;
-    }
-    
-    setupTools() {
-        const brushSizeSlider = document.getElementById('brushSize');
-        const brushSizeValue = document.getElementById('brushSizeValue');
-        const colorPicker = document.getElementById('colorPicker');
-        
-        if (brushSizeSlider && brushSizeValue) {
-            brushSizeSlider.addEventListener('input', (e) => {
-                this.brushSize = parseInt(e.target.value);
-                brushSizeValue.textContent = `${this.brushSize}px`;
-                if (this.ctx) {
-                    this.ctx.lineWidth = this.brushSize;
-                }
-            });
+  constructor() {
+    this.canvas = null;
+    this.ctx = null;
+    this.isDrawing = false;
+    this.lastX = 0;
+    this.lastY = 0;
+    this.brushSize = 5;
+    this.color = "#000000";
+    this.savedDrawings = [];
+
+    this.init();
+  }
+
+  init() {
+    this.loadSavedDrawings();
+    this.setupCanvas();
+    this.setupTools();
+    this.setupEventListeners();
+  }
+
+  setupCanvas() {
+    this.canvas = document.getElementById("drawingCanvas");
+    if (!this.canvas) return;
+
+    this.ctx = this.canvas.getContext("2d");
+    this.ctx.lineCap = "round";
+    this.ctx.lineJoin = "round";
+    this.ctx.strokeStyle = this.color;
+    this.ctx.lineWidth = this.brushSize;
+  }
+
+  setupTools() {
+    const brushSizeSlider = document.getElementById("brushSize");
+    const brushSizeValue = document.getElementById("brushSizeValue");
+    const colorPicker = document.getElementById("colorPicker");
+
+    if (brushSizeSlider && brushSizeValue) {
+      brushSizeSlider.addEventListener("input", (e) => {
+        this.brushSize = parseInt(e.target.value);
+        brushSizeValue.textContent = `${this.brushSize}px`;
+        if (this.ctx) {
+          this.ctx.lineWidth = this.brushSize;
         }
-        
-        if (colorPicker) {
-            colorPicker.addEventListener('change', (e) => {
-                this.color = e.target.value;
-                if (this.ctx) {
-                    this.ctx.strokeStyle = this.color;
-                }
-            });
-        }
-    }
-    
-    setupEventListeners() {
-        if (!this.canvas) return;
-        
-        // 마우스 이벤트
-        this.canvas.addEventListener('mousedown', (e) => this.startOrStopDrawing(e));
-        this.canvas.addEventListener('mousemove', (e) => this.draw(e));
-        
-        // 터치 이벤트 (모바일)
-        this.canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            this.startDrawing(e.touches[0]);
-        });
-        this.canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            this.draw(e.touches[0]);
-        });
-        this.canvas.addEventListener('touchend', () => this.stopDrawing());
-        
-        // 도구 버튼 이벤트
-        const clearBtn = document.getElementById('clearCanvas');
-        const downloadBtn = document.getElementById('downloadCanvas');
-        
-        if (clearBtn) {
-            clearBtn.addEventListener('click', () => this.clearCanvas());
-        }
-        
-        if (downloadBtn) {
-            downloadBtn.addEventListener('click', () => this.downloadDrawing());
-        }
+      });
     }
 
-    startOrStopDrawing(e) {
-        this.isDrawing = !this.isDrawing;
-
-        // 그리기 시작할 때 새로운 경로 시작
-        this.ctx.beginPath();
-    }
-    
-    startDrawing(e) {
-        this.isDrawing = true;
-
-        const rect = this.canvas.getBoundingClientRect();
-        this.lastX = e.clientX - rect.left;
-        this.lastY = e.clientY - rect.top;
-        
-        // 그리기 시작할 때 새로운 경로 시작
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.lastX, this.lastY);
-    }
-
-    stopDrawing() {
-        this.isDrawing = false;
-    }
-    
-    draw(e) {
-        if (!this.isDrawing) return;
-        
-        const rect = this.canvas.getBoundingClientRect();
-        const currentX = e.clientX - rect.left;
-        const currentY = e.clientY - rect.top;
-
-        this.ctx.lineTo(currentX, currentY);
-        this.ctx.stroke();
-        
-        this.lastX = currentX;
-        this.lastY = currentY;
-
-    }
-    
-    clearCanvas() {
-        if (confirm('캔버스를 지우시겠습니까?')) {
-            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    if (colorPicker) {
+      colorPicker.addEventListener("change", (e) => {
+        this.color = e.target.value;
+        if (this.ctx) {
+          this.ctx.strokeStyle = this.color;
         }
+      });
     }
-    
-    saveDrawing() {
-        const drawingData = {
-            id: Date.now(),
-            name: `그림_${new Date().toLocaleDateString()}`,
-            date: new Date().toISOString(),
-            dataURL: this.canvas.toDataURL('image/png')
-        };
-        
-        this.savedDrawings.push(drawingData);
-        this.saveToStorage();
-        this.renderSavedDrawings();
-        
-        Utils.showNotification('그림이 저장되었습니다!', 'success');
+  }
+
+  setupEventListeners() {
+    if (!this.canvas) return;
+
+    // 마우스 이벤트
+    this.canvas.addEventListener("mousedown", (e) =>
+      this.startOrStopDrawing(e)
+    );
+    this.canvas.addEventListener("mousemove", (e) => this.draw(e));
+
+    // 터치 이벤트 (모바일)
+    this.canvas.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      this.startDrawing(e.touches[0]);
+    });
+    this.canvas.addEventListener("touchmove", (e) => {
+      e.preventDefault();
+      this.draw(e.touches[0]);
+    });
+    this.canvas.addEventListener("touchend", () => this.stopDrawing());
+
+    // 도구 버튼 이벤트
+    const clearBtn = document.getElementById("clearCanvas");
+    const downloadBtn = document.getElementById("downloadCanvas");
+
+    if (clearBtn) {
+      clearBtn.addEventListener("click", () => this.clearCanvas());
     }
-    
-    downloadDrawing() {
-        const link = document.createElement('a');
-        link.download = `drawing_${new Date().toISOString().slice(0, 10)}.png`;
-        link.href = this.canvas.toDataURL('image/png');
-        link.click();
-        
-        Utils.showNotification('그림이 다운로드되었습니다!', 'success');
+
+    if (downloadBtn) {
+      downloadBtn.addEventListener("click", () => this.downloadDrawing());
     }
-    
-    loadSavedDrawings() {
-        const saved = Utils.storage.get('savedDrawings');
-        if (saved) {
-            this.savedDrawings = saved;
-        }
+  }
+
+  startOrStopDrawing(e) {
+    this.isDrawing = !this.isDrawing;
+
+    // 그리기 시작할 때 새로운 경로 시작
+    this.ctx.beginPath();
+  }
+
+  startDrawing(e) {
+    this.isDrawing = true;
+
+    const rect = this.canvas.getBoundingClientRect();
+    this.lastX = e.clientX - rect.left;
+    this.lastY = e.clientY - rect.top;
+
+    // 그리기 시작할 때 새로운 경로 시작
+    this.ctx.beginPath();
+    this.ctx.moveTo(this.lastX, this.lastY);
+  }
+
+  stopDrawing() {
+    this.isDrawing = false;
+  }
+
+  draw(e) {
+    if (!this.isDrawing) return;
+
+    const rect = this.canvas.getBoundingClientRect();
+    const currentX = e.clientX - rect.left;
+    const currentY = e.clientY - rect.top;
+
+    this.ctx.lineTo(currentX, currentY);
+    this.ctx.stroke();
+
+    this.lastX = currentX;
+    this.lastY = currentY;
+  }
+
+  clearCanvas() {
+    if (confirm("캔버스를 지우시겠습니까?")) {
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
-    
-    saveToStorage() {
-        Utils.storage.set('savedDrawings', this.savedDrawings);
+  }
+
+  saveDrawing() {
+    const drawingData = {
+      id: Date.now(),
+      name: `그림_${new Date().toLocaleDateString()}`,
+      date: new Date().toISOString(),
+      dataURL: this.canvas.toDataURL("image/png"),
+    };
+
+    this.savedDrawings.push(drawingData);
+    this.saveToStorage();
+    this.renderSavedDrawings();
+
+    Utils.showNotification("그림이 저장되었습니다!", "success");
+  }
+
+  downloadDrawing() {
+    const link = document.createElement("a");
+    link.download = `drawing_${new Date().toISOString().slice(0, 10)}.png`;
+    link.href = this.canvas.toDataURL("image/png");
+    link.click();
+
+    Utils.showNotification("그림이 다운로드되었습니다!", "success");
+  }
+
+  loadSavedDrawings() {
+    const saved = Utils.storage.get("savedDrawings");
+    if (saved) {
+      this.savedDrawings = saved;
     }
-    
-    renderSavedDrawings() {
-        const grid = document.getElementById('drawingsGrid');
-        if (!grid) return;
-        
-        if (this.savedDrawings.length === 0) {
-            grid.innerHTML = '<p class="no-drawings">저장된 그림이 없습니다.</p>';
-            return;
-        }
-        
-        grid.innerHTML = this.savedDrawings.map(drawing => `
+  }
+
+  saveToStorage() {
+    Utils.storage.set("savedDrawings", this.savedDrawings);
+  }
+
+  renderSavedDrawings() {
+    const grid = document.getElementById("drawingsGrid");
+    if (!grid) return;
+
+    if (this.savedDrawings.length === 0) {
+      grid.innerHTML = '<p class="no-drawings">저장된 그림이 없습니다.</p>';
+      return;
+    }
+
+    grid.innerHTML = this.savedDrawings
+      .map(
+        (drawing) => `
             <div class="drawing-item" data-drawing-id="${drawing.id}">
                 <div class="drawing-preview">
-                    <img src="${drawing.dataURL}" alt="${drawing.name}" style="max-width: 100%; max-height: 100%; border-radius: 6px;">
+                    <img src="${drawing.dataURL}" alt="${
+          drawing.name
+        }" style="max-width: 100%; max-height: 100%; border-radius: 6px;">
                 </div>
                 <div class="drawing-info">
                     <h4>${drawing.name}</h4>
                     <p>${new Date(drawing.date).toLocaleDateString()}</p>
                 </div>
                 <div class="drawing-actions">
-                    <button class="action-btn download-btn" title="다운로드" onclick="drawingBoard.downloadSavedDrawing(${drawing.id})">⬇️</button>
-                    <button class="action-btn delete-btn" title="삭제" onclick="drawingBoard.deleteSavedDrawing(${drawing.id})">🗑️</button>
+                    <button class="action-btn download-btn" title="다운로드" onclick="drawingBoard.downloadSavedDrawing(${
+                      drawing.id
+                    })">⬇️</button>
+                    <button class="action-btn delete-btn" title="삭제" onclick="drawingBoard.deleteSavedDrawing(${
+                      drawing.id
+                    })">🗑️</button>
                 </div>
             </div>
-        `).join('');
+        `
+      )
+      .join("");
+  }
+
+  downloadSavedDrawing(id) {
+    const drawing = this.savedDrawings.find((d) => d.id === id);
+    if (drawing) {
+      const link = document.createElement("a");
+      link.download = `${drawing.name}.png`;
+      link.href = drawing.dataURL;
+      link.click();
+
+      Utils.showNotification("그림이 다운로드되었습니다!", "success");
     }
-    
-    downloadSavedDrawing(id) {
-        const drawing = this.savedDrawings.find(d => d.id === id);
-        if (drawing) {
-            const link = document.createElement('a');
-            link.download = `${drawing.name}.png`;
-            link.href = drawing.dataURL;
-            link.click();
-            
-            Utils.showNotification('그림이 다운로드되었습니다!', 'success');
-        }
+  }
+
+  deleteSavedDrawing(id) {
+    if (confirm("이 그림을 삭제하시겠습니까?")) {
+      this.savedDrawings = this.savedDrawings.filter((d) => d.id !== id);
+      this.saveToStorage();
+      this.renderSavedDrawings();
+
+      Utils.showNotification("그림이 삭제되었습니다!", "success");
     }
-    
-    deleteSavedDrawing(id) {
-        if (confirm('이 그림을 삭제하시겠습니까?')) {
-            this.savedDrawings = this.savedDrawings.filter(d => d.id !== id);
-            this.saveToStorage();
-            this.renderSavedDrawings();
-            
-            Utils.showNotification('그림이 삭제되었습니다!', 'success');
-        }
-    }
+  }
 }
 
 // 전역 객체로 노출
