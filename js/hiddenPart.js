@@ -13,6 +13,10 @@ class HiddenPictureGame {
     this.image = new Image();
     this.points = [];
     this.hitRadius = 25;
+    // 실제 이미지가 그려진 영역 (좌우/상하 여백 제외)
+    this.drawRegion = null;
+    // 이미지 안쪽으로 한 번 더 여유를 두기 위한 패딩 (px)
+    this.pointPadding = 20;
     this.storageKey = "hiddenPictureGame_state";
 
     this.init();
@@ -98,6 +102,14 @@ class HiddenPictureGame {
     offsetX = (this.canvas.width - drawWidth) / 2;
     offsetY = (this.canvas.height - drawHeight) / 2;
 
+    // 실제 이미지가 차지하는 영역 저장
+    this.drawRegion = {
+      x: offsetX,
+      y: offsetY,
+      width: drawWidth,
+      height: drawHeight,
+    };
+
     this.ctx.drawImage(this.image, offsetX, offsetY, drawWidth, drawHeight);
   }
 
@@ -109,13 +121,42 @@ class HiddenPictureGame {
 
     this.points = [];
 
+    // 이미지가 실제로 그려진 영역 기준으로만 포인트 생성
+    if (!this.drawRegion) {
+      // drawRegion이 없으면 이미지 영역을 다시 계산
+      if (this.image && this.image.complete) {
+        this.drawImageToCanvas();
+      } else {
+        this.showMessage(
+          "이미지 영역을 계산할 수 없습니다. 이미지를 다시 업로드해주세요.",
+          "error"
+        );
+        return;
+      }
+    }
+
+    const region = this.drawRegion;
+    if (!region) {
+      this.showMessage("이미지 영역을 찾을 수 없습니다.", "error");
+      return;
+    }
+
+    // hitRadius(정답 판정 반경) + 추가 패딩만큼 가장자리를 잘라내고 포인트 생성
+    const margin = this.hitRadius + this.pointPadding;
+    const safeWidth = Math.max(region.width - margin * 2, 0);
+    const safeHeight = Math.max(region.height - margin * 2, 0);
+
+    if (safeWidth <= 0 || safeHeight <= 0) {
+      this.showMessage(
+        "이미지가 너무 작아서 포인트를 생성할 수 없습니다.",
+        "error"
+      );
+      return;
+    }
+
     for (let i = 0; i < count; i++) {
-      const x =
-        Math.random() * (this.canvas.width - this.hitRadius * 2) +
-        this.hitRadius;
-      const y =
-        Math.random() * (this.canvas.height - this.hitRadius * 2) +
-        this.hitRadius;
+      const x = region.x + margin + Math.random() * safeWidth;
+      const y = region.y + margin + Math.random() * safeHeight;
 
       const previewDataUrl = this.createPointPreview(x, y);
 
@@ -162,8 +203,13 @@ class HiddenPictureGame {
 
   handleCanvasClick(event) {
     const rect = this.canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    // 캔버스의 실제 크기와 표시 크기의 비율 계산 (CSS 스케일링 고려)
+    const scaleX = this.canvas.width / rect.width;
+    const scaleY = this.canvas.height / rect.height;
+
+    // 클릭 좌표를 캔버스 내부 좌표로 변환
+    const x = (event.clientX - rect.left) * scaleX;
+    const y = (event.clientY - rect.top) * scaleY;
 
     let hitPoint = null;
 
@@ -240,6 +286,7 @@ class HiddenPictureGame {
       const data = {
         imageData: this.canvas.toDataURL("image/png"),
         points: this.points,
+        drawRegion: this.drawRegion, // 이미지 영역 정보도 함께 저장
       };
       Utils.storage.set(this.storageKey, data);
     } catch (e) {
@@ -254,7 +301,18 @@ class HiddenPictureGame {
     const img = new Image();
     img.onload = () => {
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-      this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
+
+      // 저장된 drawRegion이 있으면 사용, 없으면 이미지를 다시 그려서 계산
+      if (saved.drawRegion) {
+        this.drawRegion = saved.drawRegion;
+        // 저장된 이미지가 이미 drawRegion에 맞게 그려져 있으므로 그대로 사용
+        this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
+      } else {
+        // 이전 버전 호환: 이미지를 다시 그려서 drawRegion 계산
+        this.image = img;
+        this.drawImageToCanvas();
+      }
+
       this.image = img;
       this.points = saved.points || [];
       this.renderPointsList();
