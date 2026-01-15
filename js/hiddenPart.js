@@ -16,7 +16,7 @@ class HiddenPictureGame {
     // 실제 이미지가 그려진 영역 (좌우/상하 여백 제외)
     this.drawRegion = null;
     // 이미지 안쪽으로 한 번 더 여유를 두기 위한 패딩 (px)
-    this.pointPadding = 20;
+    this.pointPadding = 1;
     this.storageKey = "hiddenPictureGame_state";
 
     this.init();
@@ -181,6 +181,82 @@ class HiddenPictureGame {
       `${count}개의 숨은 포인트가 생성되었습니다. 캔버스를 클릭해서 찾아보세요!`,
       "info"
     );
+
+    // 테스트용: 포인트 생성 범위 시각화
+    // this.drawPointGenerationRanges();
+  }
+
+  // 포인트 생성 범위를 시각적으로 표시하는 함수 (테스트용)
+  drawPointGenerationRanges() {
+    if (!this.ctx || !this.drawRegion) return;
+
+    const region = this.drawRegion;
+    const margin = this.hitRadius + this.pointPadding;
+    const safeWidth = Math.max(region.width - margin * 2, 0);
+    const safeHeight = Math.max(region.height - margin * 2, 0);
+
+    this.ctx.save();
+
+    // 1. 이미지 영역 전체 (파란색 테두리)
+    this.ctx.strokeStyle = "rgba(52, 152, 219, 0.6)"; // 파란색
+    this.ctx.lineWidth = 2;
+    this.ctx.setLineDash([5, 5]);
+    this.ctx.strokeRect(region.x, region.y, region.width, region.height);
+
+    // 라벨 추가
+    this.ctx.fillStyle = "rgba(52, 152, 219, 0.8)";
+    this.ctx.font = "12px Arial";
+    this.ctx.fillText("이미지 영역 전체", region.x + 5, region.y + 15);
+
+    // 2. 패딩이 적용된 안전 영역 (빨간색 테두리)
+    this.ctx.strokeStyle = "rgba(231, 76, 60, 0.6)"; // 빨간색
+    this.ctx.lineWidth = 2;
+    this.ctx.setLineDash([3, 3]);
+    this.ctx.strokeRect(
+      region.x + margin,
+      region.y + margin,
+      safeWidth,
+      safeHeight
+    );
+
+    // 라벨 추가
+    this.ctx.fillStyle = "rgba(231, 76, 60, 0.8)";
+    this.ctx.fillText(
+      `안전 영역 (margin: ${margin}px)`,
+      region.x + margin + 5,
+      region.y + margin + 15
+    );
+
+    // 3. 실제 포인트 생성 가능 영역 (초록색 테두리)
+    this.ctx.strokeStyle = "rgba(46, 204, 113, 0.6)"; // 초록색
+    this.ctx.lineWidth = 2;
+    this.ctx.setLineDash([]);
+    this.ctx.strokeRect(
+      region.x + margin,
+      region.y + margin,
+      safeWidth,
+      safeHeight
+    );
+
+    // 라벨 추가
+    this.ctx.fillStyle = "rgba(46, 204, 113, 0.8)";
+    this.ctx.fillText(
+      `포인트 생성 영역 (${Math.round(safeWidth)} x ${Math.round(safeHeight)})`,
+      region.x + margin + 5,
+      region.y + margin + 30
+    );
+
+    // 4. 패딩 정보 표시
+    this.ctx.fillStyle = "rgba(155, 89, 182, 0.8)"; // 보라색
+    this.ctx.font = "11px Arial";
+    const infoY = region.y + region.height - 10;
+    this.ctx.fillText(
+      `hitRadius: ${this.hitRadius}px, pointPadding: ${this.pointPadding}px, 총 margin: ${margin}px`,
+      region.x + 5,
+      infoY
+    );
+
+    this.ctx.restore();
   }
 
   createPointPreview(x, y) {
