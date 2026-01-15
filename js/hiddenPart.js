@@ -12,7 +12,7 @@ class HiddenPictureGame {
 
     this.image = new Image();
     this.points = [];
-    this.hitRadius = 25;
+    this.hitRadius = 40;
     // 실제 이미지가 그려진 영역 (좌우/상하 여백 제외)
     this.drawRegion = null;
     // 이미지 안쪽으로 한 번 더 여유를 두기 위한 패딩 (px)
@@ -158,14 +158,15 @@ class HiddenPictureGame {
       const x = region.x + margin + Math.random() * safeWidth;
       const y = region.y + margin + Math.random() * safeHeight;
 
-      const previewDataUrl = this.createPointPreview(x, y);
-
+      const previewInfo = this.createPointPreview(x, y);
+      console.log("포인트좌표", x, y);
       this.points.push({
         id: Date.now() + Math.random(),
-        x,
-        y,
+        x, // 미리보기 영역의 중심 X 좌표
+        y, // 미리보기 영역의 중심 Y 좌표
         found: false,
-        previewDataUrl,
+        previewDataUrl: previewInfo ? previewInfo.dataUrl : null,
+        previewSize: previewInfo ? previewInfo.size : 80, // 미리보기 영역의 크기
       });
     }
 
@@ -198,7 +199,10 @@ class HiddenPictureGame {
       size
     );
 
-    return previewCanvas.toDataURL("image/png");
+    return {
+      dataUrl: previewCanvas.toDataURL("image/png"),
+      size: size,
+    };
   }
 
   handleCanvasClick(event) {
@@ -208,17 +212,31 @@ class HiddenPictureGame {
     const scaleY = this.canvas.height / rect.height;
 
     // 클릭 좌표를 캔버스 내부 좌표로 변환
-    const x = (event.clientX - rect.left) * scaleX;
-    const y = (event.clientY - rect.top) * scaleY;
+    const clickX = (event.clientX - rect.left) * scaleX;
+    const clickY = (event.clientY - rect.top) * scaleY;
 
     let hitPoint = null;
 
     this.points.forEach((point) => {
       if (point.found) return;
-      const dx = point.x - x;
-      const dy = point.y - y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      if (distance <= this.hitRadius && !hitPoint) {
+
+      // 미리보기 영역의 크기 (기본값 80)
+      const previewSize = point.previewSize || 80;
+
+      // 미리보기 영역의 사각형 범위 계산
+      const previewLeft = point.x - previewSize / 2;
+      const previewRight = point.x + previewSize / 2;
+      const previewTop = point.y - previewSize / 2;
+      const previewBottom = point.y + previewSize / 2;
+
+      // 클릭 위치가 미리보기 영역 안에 있는지 확인
+      if (
+        clickX >= previewLeft &&
+        clickX <= previewRight &&
+        clickY >= previewTop &&
+        clickY <= previewBottom &&
+        !hitPoint
+      ) {
         hitPoint = point;
       }
     });
@@ -241,6 +259,7 @@ class HiddenPictureGame {
     this.ctx.beginPath();
     this.ctx.strokeStyle = "#27ae60";
     this.ctx.lineWidth = 3;
+    // 미리보기 영역의 중심 좌표를 기준으로 원 그리기
     this.ctx.arc(point.x, point.y, this.hitRadius, 0, Math.PI * 2);
     this.ctx.stroke();
     this.ctx.restore();
