@@ -119,6 +119,11 @@ class HiddenPictureGame {
       10
     );
 
+    // 기존에 그려진 동그라미들을 모두 지우기 위해 이미지를 다시 그림
+    if (this.image && this.image.complete) {
+      this.drawImageToCanvas();
+    }
+
     this.points = [];
 
     // 이미지가 실제로 그려진 영역 기준으로만 포인트 생성
