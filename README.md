@@ -9,12 +9,12 @@ CodePlayground/
 ├── index.html              # 메인 HTML 파일 (모든 페이지 포함)
 ├── css/                   # 스타일시트 파일들
 │   ├── common.css         # 공통 스타일
-│   ├── sidebar.css        # 사이드바 스타일
-│   └── file-manager.css   # 파일 관리 및 그림판 스타일
+│   ├── common.css         # 숨은그림찾기 게임
+│   └── sidebar.css        # 사이드바 스타일
 ├── js/                    # JavaScript 파일들
 │   ├── common.js          # 공통 유틸리티
+│   ├── hiddenPictureGame.js # 숨은그림찾기 관리
 │   ├── sidebar.js         # 사이드바 관리
-│   ├── file-manager.js    # 각종 기능 (그림판)
 │   └── main.js           # 메인 애플리케이션
 └── README.md             # 프로젝트 설명서
 ```
@@ -24,7 +24,7 @@ CodePlayground/
 ### 📄 페이지 관리
 - **홈**: 고민중
 - **그림판**: 그림판 기능
-- **모바일 앱**: 모바일 앱 파일 관리
+- **숨은그림찾기**: 이미지를 올려서 숨은 그림 찾기 게임 기능
 - **디자인**: 디자인 파일 관리
 
 ### 🎨 사용자 인터페이스

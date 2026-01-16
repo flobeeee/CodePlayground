@@ -6,7 +6,7 @@
     <title>Playground</title>
     <link rel="stylesheet" href="css/common.css" />
     <link rel="stylesheet" href="css/sidebar.css" />
-    <link rel="stylesheet" href="css/hiddenPart.css" />
+    <link rel="stylesheet" href="css/hidden-picture-game.css" />
   </head>
   <body>
     <!-- 사이드바 메뉴 -->
@@ -46,16 +46,16 @@
           <!-- 홈 페이지 -->
           <div class="page" id="homePage">
             <h1>🏠 홈</h1>
-            <p>안녕하세요</p>
+            <p>각종 기능을 즐겨보세요</p>
           </div>
 
           <!-- 그림판 페이지 -->
           <div class="page" id="drawingBoardPage" style="display: none">
-            <h1>🎨 그림판</h1>
+            <h1>🎨 온오프 그림판</h1>
             <div class="drawing-section">
               <p><strong>- 기능 -</strong></p>
               <p>클릭: 그리기 ON/OFF</p>
-              <p>투명배경 저장 가능</p>
+              <p>투명배경 저장</p>
               <p>이미지크기: 800x600</p>
 
               <!-- 그림판 도구 -->
@@ -99,75 +99,6 @@
                   height="600"
                   style="background-color: #ffffff"
                 ></canvas>
-              </div>
-            </div>
-          </div>
-
-          <!-- 모바일 앱 페이지 -->
-          <div class="page" id="mobilePage" style="display: none">
-            <h1>📝 모바일 앱 파일</h1>
-            <p>
-              모바일 앱 페이지입니다!
-              <span class="clickable-text" data-page="design">다음</span>으로
-              가거나
-            </p>
-            <p>
-              <span class="clickable-text" data-page="drawingBoard">이전</span>
-              페이지로 갈 수 있습니다.
-            </p>
-            <p>사이드바 메뉴를 통해 원하는 페이지로 바로 이동하세요.</p>
-
-            <div class="file-section">
-              <h2>📱 모바일 앱 폴더</h2>
-              <div class="file-upload-area">
-                <input
-                  type="file"
-                  id="fileInputMobile"
-                  multiple
-                  accept="*/*"
-                  style="display: none"
-                />
-                <button
-                  class="upload-btn"
-                  onclick="document.getElementById('fileInputMobile').click()"
-                >
-                  📤 파일 업로드
-                </button>
-                <p class="upload-hint">모바일 앱 관련 파일들을 업로드하세요</p>
-              </div>
-              <div class="file-list" id="fileListMobile">
-                <div class="file-item">
-                  <div class="file-icon">📱</div>
-                  <div class="file-info">
-                    <h4>App.js</h4>
-                    <p>React Native 메인 앱 파일</p>
-                    <span class="file-size">2.7 KB</span>
-                  </div>
-                  <div class="file-actions">
-                    <button class="action-btn download-btn" title="다운로드">
-                      ⬇️
-                    </button>
-                    <button class="action-btn delete-btn" title="삭제">
-                      🗑️
-                    </button>
-                  </div>
-                </div>
-                <div class="file-item">
-                  <div class="file-icon">📦</div>
-                  <div class="file-info">
-                    <h4>package.json</h4>
-                    <p>프로젝트 의존성 파일</p>
-                    <span class="file-size">1.5 KB</span>
-                  </div>
-                  <div class="file-actions">
-                    <button class="action-btn download-btn" title="다운로드">
-                      ⬇️
-                    </button>
-                    <button class="action-btn delete-btn" title="삭제">
-                      🗑️
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -238,7 +169,7 @@
 
     <script src="js/common.js"></script>
     <script src="js/sidebar.js"></script>
-    <script src="js/hiddenPart.js"></script>
+    <script src="js/hiddenPictureGame.js"></script>
     <script src="js/main.js"></script>
   </body>
 </html>
