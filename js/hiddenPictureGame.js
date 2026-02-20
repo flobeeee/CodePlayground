@@ -9,10 +9,22 @@ class HiddenPictureGame {
     this.generatePointsBtn = document.getElementById("generatePointsBtn");
     this.pointsList = document.getElementById("hiddenPointsList");
     this.messageEl = document.getElementById("hiddenGameMessage");
+    this.defaultImagesGrid = document.getElementById("defaultImagesGrid");
 
     this.image = new Image();
     this.points = [];
     this.hitRadius = 40;
+    // 기본으로 선택할 수 있는 이미지 목록 (경로, 제목)
+    this.defaultImages = [
+      {
+        path: "images/hidden-picture-defaults/sample1.jpg",
+        title: "윌리를찾아라1",
+      },
+      {
+        path: "images/hidden-picture-defaults/sample2.jpg",
+        title: "윌리를찾아라2",
+      },
+    ];
     // 실제 이미지가 그려진 영역 (좌우/상하 여백 제외)
     this.drawRegion = null;
     // 이미지 안쪽으로 한 번 더 여유를 두기 위한 패딩 (px)
@@ -27,11 +39,37 @@ class HiddenPictureGame {
       return;
     }
 
+    this.renderDefaultImages();
     this.bindEvents();
     this.loadFromStorage();
   }
 
+  renderDefaultImages() {
+    if (!this.defaultImagesGrid) return;
+    this.defaultImagesGrid.innerHTML = this.defaultImages
+      .map(
+        (item, index) => `
+        <button type="button" class="default-image-btn" data-default-index="${index}" title="${item.title}">
+          <img src="${item.path}" alt="${item.title}" class="default-image-thumb" />
+          <span class="default-image-label">${item.title}</span>
+        </button>
+      `,
+      )
+      .join("");
+  }
+
   bindEvents() {
+    if (this.defaultImagesGrid) {
+      this.defaultImagesGrid.addEventListener("click", (e) => {
+        const btn = e.target.closest(".default-image-btn");
+        if (btn) {
+          const index = parseInt(btn.getAttribute("data-default-index"), 10);
+          const item = this.defaultImages[index];
+          if (item) this.loadDefaultImage(item.path);
+        }
+      });
+    }
+
     if (this.uploadBtn && this.fileInput) {
       this.uploadBtn.addEventListener("click", () => {
         this.fileInput.click();
@@ -61,6 +99,25 @@ class HiddenPictureGame {
     }
   }
 
+  loadDefaultImage(src) {
+    const img = new Image();
+    img.onload = () => {
+      this.image = img;
+      this.drawImageToCanvas();
+      this.points = [];
+      this.renderPointsList();
+      this.saveToStorage();
+      this.showMessage(
+        "기본 이미지가 선택되었습니다. 포인트를 생성해보세요!",
+        "success",
+      );
+    };
+    img.onerror = () => {
+      this.showMessage("기본 이미지를 불러올 수 없습니다.", "error");
+    };
+    img.src = src;
+  }
+
   loadImageFile(file) {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -72,7 +129,7 @@ class HiddenPictureGame {
         this.saveToStorage();
         this.showMessage(
           "이미지가 업로드되었습니다. 포인트를 생성해보세요!",
-          "success"
+          "success",
         );
       };
       this.image.src = e.target.result;
@@ -116,7 +173,7 @@ class HiddenPictureGame {
   generateRandomPoints() {
     const count = Math.min(
       Math.max(parseInt(this.pointsCountInput.value || "5", 10), 1),
-      10
+      10,
     );
 
     // 기존에 그려진 동그라미들을 모두 지우기 위해 이미지를 다시 그림
@@ -134,7 +191,7 @@ class HiddenPictureGame {
       } else {
         this.showMessage(
           "이미지 영역을 계산할 수 없습니다. 이미지를 다시 업로드해주세요.",
-          "error"
+          "error",
         );
         return;
       }
@@ -154,7 +211,7 @@ class HiddenPictureGame {
     if (safeWidth <= 0 || safeHeight <= 0) {
       this.showMessage(
         "이미지가 너무 작아서 포인트를 생성할 수 없습니다.",
-        "error"
+        "error",
       );
       return;
     }
@@ -179,7 +236,7 @@ class HiddenPictureGame {
     this.saveToStorage();
     this.showMessage(
       `${count}개의 숨은 포인트가 생성되었습니다. 캔버스를 클릭해서 찾아보세요!`,
-      "info"
+      "info",
     );
 
     // 테스트용: 포인트 생성 범위 시각화
@@ -216,7 +273,7 @@ class HiddenPictureGame {
       region.x + margin,
       region.y + margin,
       safeWidth,
-      safeHeight
+      safeHeight,
     );
 
     // 라벨 추가
@@ -224,7 +281,7 @@ class HiddenPictureGame {
     this.ctx.fillText(
       `안전 영역 (margin: ${margin}px)`,
       region.x + margin + 5,
-      region.y + margin + 15
+      region.y + margin + 15,
     );
 
     // 3. 실제 포인트 생성 가능 영역 (초록색 테두리)
@@ -235,7 +292,7 @@ class HiddenPictureGame {
       region.x + margin,
       region.y + margin,
       safeWidth,
-      safeHeight
+      safeHeight,
     );
 
     // 라벨 추가
@@ -243,7 +300,7 @@ class HiddenPictureGame {
     this.ctx.fillText(
       `포인트 생성 영역 (${Math.round(safeWidth)} x ${Math.round(safeHeight)})`,
       region.x + margin + 5,
-      region.y + margin + 30
+      region.y + margin + 30,
     );
 
     // 4. 패딩 정보 표시
@@ -253,7 +310,7 @@ class HiddenPictureGame {
     this.ctx.fillText(
       `hitRadius: ${this.hitRadius}px, pointPadding: ${this.pointPadding}px, 총 margin: ${margin}px`,
       region.x + 5,
-      infoY
+      infoY,
     );
 
     this.ctx.restore();
@@ -277,7 +334,7 @@ class HiddenPictureGame {
       0,
       0,
       size,
-      size
+      size,
     );
 
     return {
@@ -375,7 +432,7 @@ class HiddenPictureGame {
                         }</p>
                     </div>
                 </div>
-            `
+            `,
       )
       .join("");
   }
@@ -497,7 +554,7 @@ class DrawingBoard {
 
     // 마우스 이벤트
     this.canvas.addEventListener("mousedown", (e) =>
-      this.startOrStopDrawing(e)
+      this.startOrStopDrawing(e),
     );
     this.canvas.addEventListener("mousemove", (e) => this.draw(e));
 
@@ -618,8 +675,8 @@ class DrawingBoard {
             <div class="drawing-item" data-drawing-id="${drawing.id}">
                 <div class="drawing-preview">
                     <img src="${drawing.dataURL}" alt="${
-          drawing.name
-        }" style="max-width: 100%; max-height: 100%; border-radius: 6px;">
+                      drawing.name
+                    }" style="max-width: 100%; max-height: 100%; border-radius: 6px;">
                 </div>
                 <div class="drawing-info">
                     <h4>${drawing.name}</h4>
@@ -634,7 +691,7 @@ class DrawingBoard {
                     })">🗑️</button>
                 </div>
             </div>
-        `
+        `,
       )
       .join("");
   }
